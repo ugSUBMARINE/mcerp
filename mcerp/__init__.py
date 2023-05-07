@@ -7,6 +7,7 @@ Author: Abraham Lee
 Copyright: 2013 - 2014
 """
 from pkg_resources import get_distribution, DistributionNotFound
+from matplotlib import pyplot as plt
 import numpy as np
 import scipy.stats as ss
 from .lhd import lhd
@@ -238,7 +239,7 @@ class UncertainFunction(object):
         s += " > Kurtosis Coefficient... {: }\n".format(kt)
         print(s)
 
-    def plot(self, hist=False, show=False, **kwargs):
+    def plot(self, hist=False, show=False, ax=None, **kwargs):
         """
         Plot the distribution of the UncertainFunction. By default, the
         distribution is shown with a kernel density estimate (kde).
@@ -254,7 +255,9 @@ class UncertainFunction(object):
         kwargs : any valid matplotlib.pyplot.plot or .hist kwarg
         
         """
-        import matplotlib.pyplot as plt
+
+        if ax is None:
+            ax = plt.gca()
 
         vals = self._mcpts
         low = min(vals)
@@ -264,25 +267,23 @@ class UncertainFunction(object):
         xp = np.linspace(low, high, 100)
 
         if hist:
-            h = plt.hist(
+            h = ax.hist(
                 vals,
                 bins=int(np.sqrt(len(vals)) + 0.5),
                 histtype="stepfilled",
                 density=True,
                 **kwargs
             )
-            plt.ylim(0, 1.1 * h[0].max())
+            ax.set_ylim(0, 1.1 * h[0].max())
         else:
-            plt.plot(xp, p.evaluate(xp), **kwargs)
+            ax.plot(xp, p.evaluate(xp), **kwargs)
 
-        plt.xlim(low - (high - low) * 0.1, high + (high - low) * 0.1)
+        ax.set_xlim(low - (high - low) * 0.1, high + (high - low) * 0.1)
 
         if show:
             self.show()
 
     def show(self):
-        import matplotlib.pyplot as plt
-
         plt.show()
 
     def __add__(self, val):
@@ -649,7 +650,7 @@ class UncertainVariable(UncertainFunction):
         self._mcpts = lhd(dist=self.rv, size=npts).flatten()
         self.tag = tag
 
-    def plot(self, hist=False, show=False, **kwargs):
+    def plot(self, hist=False, show=False, ax=None, **kwargs):
         """
         Plot the distribution of the UncertainVariable. Continuous 
         distributions are plotted with a line plot and discrete distributions
@@ -666,20 +667,21 @@ class UncertainVariable(UncertainFunction):
         kwargs : any valid matplotlib.pyplot.plot kwarg
         
         """
-        import matplotlib.pyplot as plt
+        if ax is None:
+            ax = plt.gca()
 
         if hist:
             vals = self._mcpts
             low = vals.min()
             high = vals.max()
-            h = plt.hist(
+            h = ax.hist(
                 vals,
                 bins=int(np.sqrt(len(vals)) + 0.5),
                 histtype="stepfilled",
                 density=True,
                 **kwargs
             )
-            plt.ylim(0, 1.1 * h[0].max())
+            ax.set_ylim(0, 1.1 * h[0].max())
         else:
             bound = 0.0001
             low = self.rv.ppf(bound)
@@ -688,11 +690,11 @@ class UncertainVariable(UncertainFunction):
                 low = int(low)
                 high = int(high)
                 vals = list(range(low, high + 1))
-                plt.plot(vals, self.rv.pmf(vals), "o", **kwargs)
+                ax.plot(vals, self.rv.pmf(vals), "o", **kwargs)
             else:
                 vals = np.linspace(low, high, 500)
-                plt.plot(vals, self.rv.pdf(vals), **kwargs)
-        plt.xlim(low - (high - low) * 0.1, high + (high - low) * 0.1)
+                ax.plot(vals, self.rv.pdf(vals), **kwargs)
+        ax.set_xlim(low - (high - low) * 0.1, high + (high - low) * 0.1)
 
         if show:
             self.show()
